@@ -3,7 +3,8 @@
   "scripts": {
     "build": "yarn tsc",
     "dev": "yarn tsc -w",
-    "start": "yarn sandbox",
+    "start:dynamo": "java -Djava.library.path=./bin/dynamolocal/DynamoDBLocal.jar -jar ./bin/dynamolocal/DynamoDBLocal.jar -sharedDb -port 5000",
+    "start:sandbox": "cross-env ARC_DB_EXTERNAL=1 arc sandbox",
     "deploy": "yarn build && yarn arc deploy",
     "db:reset": "node scripts/seeds/full.js"
   },

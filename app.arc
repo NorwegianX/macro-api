@@ -1,8 +1,9 @@
 @app
 macro-api
 
-@users
-MacroWeb
+@aws
+region eu-west-1
+profile default
 
 @http
 /*
@@ -29,9 +30,19 @@ MacroWeb
   method post
   src dist/http/post-project
 
-@macros
-users
+@tables
+macro-api
+  PK *String
+  SK **String
+  stream true
 
-@aws
-region eu-west-1
-profile default
+@indexes
+macro-api
+  GSI1PK *String
+  GSI1SK **String
+  name GSI1
+
+macro-api
+  GSI2PK *String
+  GSI2SK **String
+  name GSI2

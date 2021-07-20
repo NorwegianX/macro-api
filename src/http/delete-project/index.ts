@@ -1,18 +1,25 @@
 import * as arc from '@architect/functions';
-import { ProjectRepository } from '../../shared/repositories/project';
-import { JsonResponse, UserErrorResponse } from '../../shared/responses';
+import ProjectRepository from '@/repositories/project';
+import { JsonResponse, UserErrorResponse } from '@/responses';
 
 async function http(req: any) {
   if (!req.query.id) return UserErrorResponse('No id specified');
 
-  try {
-    await ProjectRepository.deleteItemsByID(`Project#${req.query.id}`);
-    return JsonResponse(null);
-  } catch (e) {
+  const projectRepo = new ProjectRepository();
+
+  const project = await projectRepo.findById(req.query.id);
+  if (!project) {
     return UserErrorResponse(
-      'We couldnt delete all items for this Partition Key'
+      `We didn't find the project you were trying to delete`
     );
   }
+
+  const [ok, data] = await projectRepo.delete(project);
+  if (!ok) {
+    return UserErrorResponse(data);
+  }
+
+  return JsonResponse();
 }
 
 exports.handler = arc.http.async(http);

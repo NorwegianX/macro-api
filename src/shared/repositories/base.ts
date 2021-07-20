@@ -1,88 +1,94 @@
 import AWS from 'aws-sdk';
+import { ArcTable } from 'architect__functions/tables';
+
+const arc = require('@architect/functions');
 const TableName = process.env.TABLE_NAME;
 
-export default class BaseRepository {
-  static dynamo = process.env.ARC_LOCAL
-    ? new AWS.DynamoDB({ endpoint: process.env.DB_URL, region: 'eu-west-1' })
-    : new AWS.DynamoDB();
+interface NorxTable extends ArcTable {
+  rawClient: any;
+}
 
-  static error(msg): [boolean, any] {
+class BaseRepository {
+  table: NorxTable;
+
+  constructor() {
+    console.log('Creating dynamodb Repository');
+
+    this.table = arc.tables();
+    this.table.rawClient = process.env.ARC_LOCAL
+      ? new AWS.DynamoDB({ endpoint: process.env.DB_URL, region: 'eu-west-1' })
+      : new AWS.DynamoDB();
+  }
+
+  error(msg): [boolean, any] {
     return [false, msg];
   }
-  static success(res: any = null): [boolean, any] {
+
+  success(res: any = null): [boolean, any] {
     return [true, res];
   }
 
-  static async getByID(pk: string): Promise<any> {
-    const params = {
-      TableName,
-      Key: {
-        pk: { S: pk },
-        sk: { S: pk },
-      },
-    };
-    return (await BaseRepository.dynamo.getItem(params).promise()).Item;
+  async getByID(pk: string): Promise<any> {
+    // const params = {
+    //   TableName,
+    //   Key: {
+    //     pk,
+    //     sk: pk,
+    //   },
+    // };
+    return this.table.get({ pk, sk: pk });
   }
 
-  static async updateItemByID(pk: string, sk: string, attr: any): Promise<any> {
-    console.log('updating item by id ', pk, sk, attr);
-
-    const params = {
-      TableName,
-      Key: {
-        pk,
-        sk,
-      },
-      AttributeUpdates: attr,
-    };
-    return (await BaseRepository.dynamo.updateItem(params).promise()).Item;
+  ExpressionAttributeNames(props) {
+    return Object.keys(props).reduce(
+      (obj, prop) => ({
+        ...obj,
+        [`#${prop}`]: prop,
+      }),
+      {}
+    );
   }
 
-  static async deleteItemsByID(pk): Promise<any> {
-    const queryParams = {
-      ExpressionAttributeValues: {
-        ':pk': {
-          S: pk,
-        },
-      },
-      KeyConditionExpression: 'pk = :pk',
-      TableName: 'Macros',
-    };
-
-    const queryResults = await BaseRepository.dynamo
-      .query(queryParams)
-      .promise();
-
-    if (queryResults.Items && queryResults.Items.length > 0) {
-      const batchCalls = this.chunks(queryResults.Items, 25).map(
-        async chunk => {
-          const deleteRequests = chunk.map(item => {
-            return {
-              DeleteRequest: {
-                Key: {
-                  pk: item.pk,
-                  sk: item.sk,
-                },
-              },
-            };
-          });
-
-          const batchWriteParams = {
-            RequestItems: {
-              [TableName]: deleteRequests,
-            },
-          };
-          await BaseRepository.dynamo
-            .batchWriteItem(batchWriteParams)
-            .promise();
-        }
-      );
-
-      await Promise.all(batchCalls);
-    }
+  ExpressionAttributeValues(props) {
+    return Object.keys(props).reduce(
+      (obj, prop) => ({
+        ...obj,
+        [`:${prop}`]: props[prop],
+      }),
+      {}
+    );
   }
 
-  static chunks(inputArray, perChunk) {
+  UpdateExpression(props) {
+    return Object.keys(props)
+      .map(prop => `#${prop} = :${prop}`)
+      .join(', ')
+      .replace(/^/, 'SET ');
+  }
+
+  createUpdateParams(Key, props) {
+    return {
+      Key,
+      ExpressionAttributeNames: this.ExpressionAttributeNames(props),
+      ExpressionAttributeValues: this.ExpressionAttributeValues(props),
+      UpdateExpression: this.UpdateExpression(props),
+    };
+  }
+
+  delete(Key: { PK: String; SK: String }) {}
+
+  update({ PK, SK }, props) {
+    props = {
+      ...props,
+      updatedAt: new Date().toISOString(),
+    };
+
+    console.log('Update params ', this.createUpdateParams({ PK, SK }, props));
+
+    return this.table.update(this.createUpdateParams({ PK, SK }, props));
+  }
+
+  chunks(inputArray, perChunk) {
     return inputArray.reduce((all, one, i) => {
       const ch = Math.floor(i / perChunk);
       all[ch] = [].concat(all[ch] || [], one);
@@ -90,3 +96,12 @@ export default class BaseRepository {
     }, []);
   }
 }
+
+const init = Repository => async opts => {
+  const repo = new Repository(opts);
+  await repo.init();
+
+  return repo;
+};
+
+export { BaseRepository, init };

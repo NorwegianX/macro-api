@@ -1,7 +1,6 @@
 import * as arc from '@architect/functions';
-import { ProjectRepository } from '../../shared/repositories/project';
-import { JsonResponse, UserErrorResponse } from '../../shared/responses';
-
+import ProjectRepository from '@/repositories/project';
+import { JsonResponse, UserErrorResponse } from '@/responses';
 async function http(req: any) {
   //FIXME, seperate filter for better error handling
   if (!req.body) {

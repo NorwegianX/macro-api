@@ -6,7 +6,9 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "paths": {
-      "@/*": ["./"]
+      "@/repositories/*": ["./src/shared/repositories/*"],
+      "@/entities/*": ["./src/shared/entities/*"],
+      "@/responses": ["./src/shared/responses/index"]
     }
   },
   "include": ["./src/**/*.ts"],
