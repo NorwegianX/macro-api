@@ -8,9 +8,11 @@ async function http(req: any) {
     return UserErrorResponse('Missing filter input');
   }
 
+  const projectRepo = await ProjectRepository();
+
   const projects = req.query.user
-    ? await ProjectRepository.listAllByUser(req.query.user)
-    : await ProjectRepository.getByID(`Project#${req.query.id}`);
+    ? await projectRepo.listByUser(req.query.user)
+    : await projectRepo.findById(req.query.id);
 
   if (!projects) {
     return UserErrorResponse("We couldn't find any projects");

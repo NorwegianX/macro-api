@@ -7,6 +7,10 @@ class ProjectRepository extends BaseRepository {
     return this.table.put(project.toItem());
   }
 
+  findById(project): Promise<any> {
+    return Promise.resolve({});
+  }
+
   listByUser(user: string): Promise<any> {
     throw new Error('Not implemented list by user');
   }

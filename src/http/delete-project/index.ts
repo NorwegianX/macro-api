@@ -5,7 +5,7 @@ import { JsonResponse, UserErrorResponse } from '@/responses';
 async function http(req: any) {
   if (!req.query.id) return UserErrorResponse('No id specified');
 
-  const projectRepo = new ProjectRepository();
+  const projectRepo = await ProjectRepository();
 
   const project = await projectRepo.findById(req.query.id);
   if (!project) {

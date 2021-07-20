@@ -1,7 +1,17 @@
 const Base = require('./base');
 
+interface ProjectArgs {
+  id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
 class Project extends Base {
-  constructor({ id, createdAt = new Date(), updatedAt = new Date() }) {
+  constructor({
+    id,
+    createdAt = new Date(),
+    updatedAt = new Date(),
+  }: ProjectArgs) {
     super();
     this.id = id ? id : this.ulid();
     this.createdAt = createdAt;

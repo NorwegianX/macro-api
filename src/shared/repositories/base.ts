@@ -1,20 +1,18 @@
 import AWS from 'aws-sdk';
-import { ArcTable } from 'architect__functions/tables';
+import { ArcDataIndexable } from 'architect__functions/tables';
+import * as arc from '@architect/functions';
 
-const arc = require('@architect/functions');
-const TableName = process.env.TABLE_NAME;
-
-interface NorxTable extends ArcTable {
-  rawClient: any;
+interface NorxTable extends ArcDataIndexable {
+  rawClient?: any;
 }
 
 class BaseRepository {
   table: NorxTable;
 
-  constructor() {
+  async init() {
     console.log('Creating dynamodb Repository');
 
-    this.table = arc.tables();
+    this.table = await arc.tables();
     this.table.rawClient = process.env.ARC_LOCAL
       ? new AWS.DynamoDB({ endpoint: process.env.DB_URL, region: 'eu-west-1' })
       : new AWS.DynamoDB();
@@ -97,10 +95,9 @@ class BaseRepository {
   }
 }
 
-const init = Repository => async opts => {
-  const repo = new Repository(opts);
+const init = Repository => async () => {
+  const repo = new Repository();
   await repo.init();
-
   return repo;
 };
 
